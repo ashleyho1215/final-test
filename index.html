@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧健康趨勢日誌與風險評估</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 🎨 全域背景改為溫柔的米黃色 */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #fdfaf2; /* 溫暖米黃色 */
+            margin: 0; 
+            padding: 20px; 
+        }
+        
+        /* 📦 容器區塊：白色底搭配香芋紫的微陰影 */
+        .container { 
+            max-width: 800px; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 24px rgba(162, 134, 184, 0.12); /* 香芋紫微陰影 */
+            border: 1px solid rgba(214, 200, 227, 0.5); /* 淡香芋紫邊框 */
+            margin: 0 auto 20px auto; 
+        }
+        
+        /* 🔮 標題改為香芋紫配色 */
+        h2, h3 { 
+            text-align: center; 
+            color: #6c4f70; /* 深香芋紫 */
+            margin-bottom: 5px; 
+        }
+        p.subtitle { 
+            text-align: center; 
+            color: #9c82a1; /* 中香芋紫 */
+            font-size: 14px; 
+            margin-bottom: 25px; 
+        }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; color: #5a4b5c; font-weight: 600; }
+        
+        /* 📝 輸入欄位聚焦時投射香芋紫光暈 */
+        input { 
+            width: 100%; 
+            padding: 11px; 
+            border: 1px solid #dcd4df; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            background-color: #fdfcfd;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #a286b8;
+            box-shadow: 0 0 8px rgba(162, 134, 184, 0.3);
+        }
+        
+        /* 🔮 按鈕改為香芋紫主色調 */
+        button#submitBtn { 
+            width: 100%; 
+            padding: 12px; 
+            background: #a286b8; /* 香芋紫 */
+            border: none; 
+            color: white; 
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: background 0.3s, transform 0.1s; 
+        }
+        button#submitBtn:hover {
+            background: #8e71a6; /* 深香芋紫 hover */
+        }
+        button#submitBtn:active {
+            transform: scale(0.99);
+        }
+        button#submitBtn.edit-mode { 
+            background: #4a90e2; /* 修改模式保持獨立藍色區隔 */
+        }
+        
+        /* 🔴🟡🟢 核心要求：健康風險文字與背景配色完全保留不更改 */
+        .result-box { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; display: none; font-size: 16px; line-height: 1.6; font-weight: bold; }
+        .risk-低 { background: #e8f8f5; color: #2ecc71; border: 1px solid #2ecc71; }
+        .risk-中 { background: #fef9e7; color: #f39c12; border: 1px solid #f39c12; }
+        .risk-高 { background: #feadad; color: #e74c3c; border: 1px solid #e74c3c; }
+        
+        /* ✨ 圖表儀表板區域樣式 */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px auto; max-width: 800px; }
+        .chart-box { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 24px rgba(162, 134, 184, 0.08); 
+            border: 1px solid rgba(214, 200, 227, 0.4);
+            box-sizing: border-box; 
+        }
+        .chart-box.full-width { grid-column: span 2; }
+        @media (max-width: 768px) { .chart-box { grid-column: span 2; } }
+
+        /* 📋 歷史表格區域 */
+        .history-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 24px rgba(162, 134, 184, 0.08);
+            border: 1px solid rgba(214, 200, 227, 0.4);
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #f2edf5; }
+        th { background-color: #f8f5fa; color: #6c4f70; font-weight: 700; }
+        
+        .action-btn { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 2px; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.85; }
+        .edit-btn { background: #e3effb; color: #2a75d3; border: 1px solid #b6d3f5; }
+        .delete-btn { background: #fcebed; color: #d93846; border: 1px solid #f7c1c5; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="formTitle">填寫健康日誌</h2>
+    <p class="subtitle">智慧健康數據分析平台</p>
+    <form id="healthForm">
+        <div class="form-group">
+            <label for="log_date">記錄日期:</label>
+            <input type="date" id="log_date" name="log_date" required>
+        </div>
+        <div class="form-group">
+            <label for="sleep">睡眠時數 (小時):</label>
+            <input type="number" id="sleep" name="sleep" step="0.5" min="0" max="24" required>
+        </div>
+        <div class="form-group">
+            <label for="steps">每日步數:</label>
+            <input type="number" id="steps" name="steps" min="0" required>
+        </div>
+        <div class="form-group">
+            <label for="mood">心情分數 (1-10):</label>
+            <input type="number" id="mood" name="mood" min="1" max="10" required>
+        </div>
+        <button type="submit" id="submitBtn">儲存日誌並評估長期風險</button>
+    </form>
+    <div id="result" class="result-box"></div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="chart-box full-width">
+        <h4 style="text-align:center; margin:5px 0; color: #2ecc71;">🛌 睡眠時數 歷史走勢</h4>
+        <canvas id="sleepChart"></canvas>
+    </div>
+    <div class="chart-box full-width">
+        <h4 style="text-align:center; margin:5px 0; color: #3498db;">👟 每日步數 歷史走勢</h4>
+        <canvas id="stepsChart"></canvas>
+    </div>
+    <div class="chart-box">
+        <h4 style="text-align:center; margin:5px 0; color: #9b59b6;">📊 心情分數 歷史走勢</h4>
+        <canvas id="moodChart"></canvas>
+    </div>
+    <div class="chart-box">
+        <h4 style="text-align:center; margin:5px 0; color: #555;">🎯 各風險等級佔比 (Percentage)</h4>
+        <canvas id="pieChart"></canvas>
+    </div>
+</div>
+
+<div class="history-container">
+    <h3>歷史健康日誌列表</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>睡眠時數</th>
+                <th>步數</th>
+                <th>心情分數</th>
+                <th>判定風險</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="historyList"></tbody>
+    </table>
+</div>
+
+<script>
+    let currentEditId = null; 
+    let existingDates = []; 
+    
+    let sleepChartInstance = null;
+    let stepsChartInstance = null;
+    let moodChartInstance = null;
+    let pieChartInstance = null;
+
+    document.getElementById('log_date').value = new Date().toISOString().split('T')[0];
+    loadHistory();
+
+    document.getElementById('healthForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const inputDate = document.getElementById('log_date').value;
+
+        if (currentEditId === null && existingDates.includes(inputDate)) {
+            alert(`【新增失敗】您在 ${inputDate} 已經填寫過日誌囉！`);
+            return;
+        }
+
+        const payload = {
+            log_date: inputDate,
+            sleep_hours: parseFloat(document.getElementById('sleep').value),
+            steps: parseInt(document.getElementById('steps').value, 10),
+            mood_score: parseInt(document.getElementById('mood').value, 10)
+        };
+
+        let apiUrl = '/health-logs';
+        let httpMethod = 'POST';
+
+        if (currentEditId !== null) {
+            apiUrl = `/health-logs/${currentEditId}`;
+            httpMethod = 'PUT';
+        }
+
+        fetch(apiUrl, {
+            method: httpMethod,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (!res.ok) return res.json().then(err => { throw new Error(err.error || '衝突'); });
+            return res.json();
+        })
+        .then(data => {
+            alert(data.message);
+            resetForm();
+            return fetch('/health-logs/risk');
+        })
+        .then(res => { if (res) return res.json(); })
+        .then(riskData => {
+            if (riskData && riskData.risk_level) {
+                const resultBox = document.getElementById('result');
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box risk-' + riskData.risk_level;
+                resultBox.innerHTML = `
+                    縱觀現有歷史 (${riskData.analysis.days_counted} 天) 數據評估：<br>
+                    平均睡眠：${riskData.analysis.avg_sleep} 小時 | 平均步數：${riskData.analysis.avg_steps} 步<br>
+                    🎯 判定長期風險等級為 【${riskData.risk_level}】
+                `;
+            }
+            loadHistory();
+        })
+        .catch(err => alert(err.message));
+    });
+
+    function loadHistory() {
+        fetch('/health-logs')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('historyList');
+            tbody.innerHTML = '';
+            existingDates = [];
+
+            data.forEach(item => {
+                existingDates.push(item.log_date);
+                const tr = document.createElement('tr');
+                const itemJson = JSON.stringify(item).replace(/"/g, '&quot;');
+                
+                // 🔴🟡🟢 這裡保留了你原本最核心的健康風險文字配色與粗體，不受外圍色系干擾
+                tr.innerHTML = `
+                    <td>${item.log_date}</td>
+                    <td>${item.sleep_hours} 小時</td>
+                    <td>${item.steps} 步</td>
+                    <td>${item.mood_score} 分</td>
+                    <td><b style="color:${item.risk_level==='高'?'red':item.risk_level==='中'?'orange':'green'}">${item.risk_level || '未評估'}</b></td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="startEdit('${itemJson}')">修改</button>
+                        <button class="action-btn delete-btn" onclick="deleteLog(${item.id})">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateCharts(data);
+        });
+    }
+
+    function updateCharts(data) {
+        const sortedData = [...data].reverse();
+        const labels = sortedData.map(d => d.log_date);
+        const sleepValues = sortedData.map(d => d.sleep_hours);
+        const stepValues = sortedData.map(d => d.steps);
+        const moodValues = sortedData.map(d => d.mood_score);
+
+        let highCount = 0, midCount = 0, lowCount = 0;
+        data.forEach(d => {
+            if (d.risk_level === '高') highCount++;
+            else if (d.risk_level === '中') midCount++;
+            else if (d.risk_level === '低') lowCount++;
+        });
+        const total = highCount + midCount + lowCount;
+
+        if (sleepChartInstance) sleepChartInstance.destroy();
+        if (stepsChartInstance) stepsChartInstance.destroy();
+        if (moodChartInstance) moodChartInstance.destroy();
+        if (pieChartInstance) pieChartInstance.destroy();
+
+        const lineCommonOptions = {
+            pointRadius: 0,       
+            pointHoverRadius: 0,  
+            borderWidth: 2.5,
+            tension: 0.15
+        };
+
+        // 🛌 A. 睡眠走勢
+        const ctxSleep = document.getElementById('sleepChart').getContext('2d');
+        sleepChartInstance = new Chart(ctxSleep, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '睡眠時數 (小時)',
+                    data: sleepValues,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.03)',
+                    fill: true,
+                    ...lineCommonOptions
+                }]
+            },
+            options: { responsive: true, scales: { y: { min: 0 } } }
+        });
+
+        // 👟 B. 步數走勢
+        const ctxSteps = document.getElementById('stepsChart').getContext('2d');
+        stepsChartInstance = new Chart(ctxSteps, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '每日步數 (步)',
+                    data: stepValues,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.03)',
+                    fill: true,
+                    ...lineCommonOptions
+                }]
+            },
+            options: { responsive: true, scales: { y: { min: 0 } } }
+        });
+
+        // 📊 C. 心情走勢
+        const ctxMood = document.getElementById('moodChart').getContext('2d');
+        moodChartInstance = new Chart(ctxMood, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '心情分數 (1-10)',
+                    data: moodValues,
+                    borderColor: '#a286b8', /* 心情折線也同步換成精緻的香芋紫 */
+                    backgroundColor: 'rgba(162, 134, 184, 0.05)',
+                    fill: true,
+                    ...lineCommonOptions
+                }]
+            },
+            options: { responsive: true, scales: { y: { min: 1, max: 10 } } }
+        });
+
+        // 🎯 D. 風險百分比圓餅圖 (維持高/中/低標準警示色)
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        pieChartInstance = new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: ['高風險 (🔴)', '中風險 (🟡)', '低風險 (🟢)'],
+                datasets: [{
+                    data: [highCount, midCount, lowCount],
+                    backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return ` ${context.label}: ${value} 天 (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function startEdit(itemStr) {
+        const item = JSON.parse(itemStr);
+        currentEditId = item.id;
+        document.getElementById('log_date').value = item.log_date;
+        document.getElementById('sleep').value = item.sleep_hours;
+        document.getElementById('steps').value = item.steps;
+        document.getElementById('mood').value = item.mood_score;
+        document.getElementById('formTitle').innerText = "🔧 正在修改健康日誌";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "確認更新此筆資料";
+        submitBtn.className = "edit-mode";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+        currentEditId = null;
+        document.getElementById('healthForm').reset();
+        document.getElementById('log_date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('formTitle').innerText = "填寫健康日誌";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "儲存日誌並評估長期風險";
+        submitBtn.className = "";
+    }
+
+    function deleteLog(id) {
+        if (confirm('確定要刪除這筆日誌嗎？')) {
+            fetch(`/health-logs/${id}`, { method: 'DELETE' })
+            .then(() => {
+                resetForm();
+                loadHistory();
+                fetch('/health-logs/risk');
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
