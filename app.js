@@ -7,7 +7,13 @@ const PORT = 8080;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// 告訴伺服器直接到最外層（根目錄）找靜態檔案
+app.use(express.static(__dirname));
+
+// 強制將首頁導向根目錄下的 index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
