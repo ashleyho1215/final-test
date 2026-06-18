@@ -1,0 +1,14 @@
+# 1. 依賴套件 (Render 部署時會自動根據 package.json 重新下載，絕對不要傳)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 2. 本地測試工具 (我們剛剛討論過的一次性灌資料腳本)
+insert_mock.js
+
+# 3. 作業系統與開發工具產生的暫存檔
+.DS_Store
+.vscode/
+.idea/
+
